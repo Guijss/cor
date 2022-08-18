@@ -11,3 +11,17 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+.copied-enter {
+  opacity: 1;
+}
+.copied-enter-active {
+  opacity: 1;
+}
+.copied-exit {
+  opacity: 1;
+}
+.copied-exit-active {
+  opacity: 0;
+  transition: opacity 200ms;
+}
