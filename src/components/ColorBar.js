@@ -1,75 +1,166 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import styled from 'styled-components';
-import { FaCheck, FaCopy } from 'react-icons/fa';
+import { FaCheck, FaCopy, FaLock, FaLockOpen } from 'react-icons/fa';
 
 const Bar = styled.div`
   position: relative;
-  width: 20%;
+  width: calc(100% * ${(props) => props.width});
   height: 100%;
   display: flex;
-  border-radius: ${(props) => props.radius};
-  justify-content: flex-end;
+  justify-content: center;
   align-items: center;
   flex-direction: column;
+  transition: width 0.5s ease-in, border-radius 0.5s ease-in;
+  font-family: 'Fredoka', sans-serif;
+  font-weight: bold;
+  letter-spacing: 0.1rem;
+  &:hover {
+    cursor: ${(props) => (props.mainPicked ? 'default' : 'pointer')};
+  }
+`;
+
+const HexText = styled.span`
+  position: absolute;
+  width: 100%;
+  height: 3rem;
+  font-size: 0.8rem;
+  bottom: 0;
+  opacity: ${(props) => props.opacity};
+  transition: opacity 0.1s ease-in 0.5s;
+  display: flex;
+  justify-content: center;
+  align-items: center;
   &:hover {
     cursor: pointer;
   }
 `;
 
-const HexText = styled.span`
+const PickMain = styled.span`
   position: relative;
-  margin-bottom: 1rem;
-  font-size: 0.8rem;
-  letter-spacing: 0.1rem;
-  font-weight: bold;
-  font-family: 'Fredoka', sans-serif;
+  font-size: 2rem;
+  opacity: ${(props) => props.opacity};
 `;
 
-const ColorBar = ({ idx, color, len }) => {
-  const [copied, setCopied] = useState(false);
-  const [hovering, setHovering] = useState(false);
-  const [borderRadius, setBorderRadius] = useState('0 0 0 0');
+const LockIcon = styled.span`
+  position: relative;
+  width: 100%;
+  height: 30%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  &:hover {
+    cursor: pointer;
+  }
+`;
 
-  const copy = () => {
-    navigator.clipboard.writeText(color.rgb.hex);
-    setCopied(true);
+const ColorBar = ({
+  idx,
+  color,
+  visible,
+  width,
+  mainPicked,
+  isBarLocked,
+  mainColorRange,
+  setIsBarLocked,
+  setPickerVisible,
+  setPickedRanges,
+}) => {
+  const [copied, setCopied] = useState(false);
+  const [hoveringBar, setHoveringBar] = useState(false);
+  const [hoveringText, setHoveringText] = useState(false);
+
+  const handlePick = () => {
+    if (!mainPicked) {
+      setPickerVisible(true);
+    }
   };
 
-  useEffect(() => {
+  const handleClick = () => {
     if (idx === 0) {
-      setBorderRadius('1rem 0 0 1rem');
-    } else if (idx === len - 1) {
-      setBorderRadius('0 1rem 1rem 0');
+      return;
     }
-  }, [idx, len]);
+    setPickedRanges((prev) => [
+      ...prev,
+      (12 - mainColorRange + color.range) % 12,
+    ]);
+    setIsBarLocked((prev) => prev.map((e, i) => (i !== idx ? e : !e)));
+  };
+
+  const copy = () => {
+    if (mainPicked) {
+      navigator.clipboard.writeText(color.rgb.hex);
+      setCopied(true);
+    }
+  };
 
   return (
     <Bar
-      radius={borderRadius}
+      width={visible === 1 ? width : 0}
       style={{
         backgroundColor: color.rgb.hex,
       }}
-      onMouseEnter={() => setHovering(true)}
+      mainPicked={mainPicked}
+      onMouseEnter={() => setHoveringBar(true)}
       onMouseLeave={() => {
-        setHovering(false);
-        setCopied(false);
+        setHoveringBar(false);
       }}
-      onClick={copy}
+      onClick={handlePick}
     >
-      <HexText style={{ color: color.rgb.contrast }}>
-        {hovering ? (
-          <>
-            {copied ? (
-              <FaCheck size={12} color={color.rgb.contrast} />
+      {mainPicked ? (
+        <>
+          <HexText
+            style={{ color: color.rgb.contrast }}
+            opacity={visible === 1 ? 1 : 0}
+            onClick={copy}
+            onMouseEnter={() => setHoveringText(true)}
+            onMouseLeave={() => {
+              setHoveringText(false);
+              setCopied(false);
+            }}
+          >
+            {hoveringText ? (
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                }}
+              >
+                <span style={{ margin: '5px 5px 0 0' }}>
+                  {copied ? (
+                    <FaCheck size={12} color={color.rgb.contrast} />
+                  ) : (
+                    <FaCopy size={12} color={color.rgb.contrast} />
+                  )}
+                </span>
+                <span>Copy</span>
+              </div>
             ) : (
-              <FaCopy size={12} color={color.rgb.contrast} />
+              color.rgb.hex
             )}
-            Copy
-          </>
-        ) : (
-          color.rgb.hex
-        )}
-      </HexText>
+          </HexText>
+          <LockIcon
+            onClick={handleClick}
+            style={{
+              opacity: hoveringBar ? 1 : 0.2,
+              visibility: idx !== 0 ? 'visible' : 'hidden',
+            }}
+          >
+            {isBarLocked[idx] ? (
+              <FaLock size={30} color={color.rgb.contrast} />
+            ) : (
+              <FaLockOpen size={30} color={color.rgb.contrast} />
+            )}
+          </LockIcon>
+        </>
+      ) : (
+        <PickMain
+          style={{ color: color.rgb.contrast }}
+          opacity={visible === 1 ? 1 : 0}
+        >
+          Pick your main color!
+        </PickMain>
+      )}
     </Bar>
   );
 };

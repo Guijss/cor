@@ -1,22 +1,65 @@
 import { useState, useRef, useEffect } from 'react';
 import styled from 'styled-components';
 import SaturationSquare from './SaturationSquare';
+import colorSetup from '../helpers/color';
+import { FaCheck } from 'react-icons/fa';
+
+const PickContainer = styled.div`
+  position: absolute;
+  width: 300px;
+  height: 350px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  border-radius: 1rem;
+  border: 2px solid black;
+  left: 20%;
+`;
+
+const WheelContainer = styled.div`
+  position: relative;
+  width: 100%;
+  height: 300px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 1rem;
+`;
+
+const Confirm = styled.div`
+  position: relative;
+  width: 100%;
+  height: 50px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: gray;
+  &:hover {
+    cursor: pointer;
+    color: green;
+  }
+`;
 
 const Wheel = styled.div`
   position: relative;
   background: conic-gradient(
     hsl(0, 100%, 50%),
-    hsl(45, 100%, 50%),
+    hsl(30, 100%, 50%),
+    hsl(60, 100%, 50%),
     hsl(90, 100%, 50%),
-    hsl(135, 100%, 50%),
+    hsl(120, 100%, 50%),
+    hsl(150, 100%, 50%),
     hsl(180, 100%, 50%),
-    hsl(225, 100%, 50%),
+    hsl(210, 100%, 50%),
+    hsl(240, 100%, 50%),
     hsl(270, 100%, 50%),
-    hsl(315, 100%, 50%),
+    hsl(300, 100%, 50%),
+    hsl(330, 100%, 50%),
     hsl(360, 100%, 50%)
   );
-  width: 200px;
-  height: 200px;
+  width: 90%;
+  height: 90%;
   min-width: 200px;
   min-height: 200px;
   border-radius: 50%;
@@ -27,7 +70,6 @@ const Wheel = styled.div`
 
 const WheelMask = styled.div`
   position: relative;
-  background-color: #a4a4a4;
   width: 83%;
   height: 83%;
   border-radius: 50%;
@@ -45,20 +87,15 @@ const Marker = styled.div`
   transform-origin: bottom center;
 `;
 
-const CurrentColor = styled.div`
-  position: relative;
-  width: 200px;
-  height: 200px;
-  border-radius: 2rem;
-`;
-
-const Picker = () => {
+const Picker = ({ theme, setTheme, setMainPicked, setPickerVisible }) => {
   const wheelRef = useRef(null);
   const squareRef = useRef(null);
   const markerRef = useRef(null);
   const [hue, setHue] = useState(0);
-  const [color, setColor] = useState({ h: 0, s: 100, b: 100 }); //hsb
-  const [bullsEyePos, setBullsEyePos] = useState({ x: 50, y: 50 });
+  const [bullsEyePos, setBullsEyePos] = useState({
+    x: 50,
+    y: 50,
+  });
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [dragging, setDragging] = useState({ wheel: false, sat: false });
 
@@ -66,7 +103,6 @@ const Picker = () => {
     const disableDrag = () => setDragging({ wheel: false, sat: false });
     const updateMouse = (e) => {
       e.preventDefault();
-
       setMousePos({ x: e.clientX, y: e.clientY });
     };
     window.addEventListener('mousemove', updateMouse);
@@ -78,6 +114,12 @@ const Picker = () => {
   }, []);
 
   useEffect(() => {
+    setHue(theme.c1.hsb.h);
+    setBullsEyePos({ x: theme.c1.hsb.s, y: 100 - theme.c1.hsb.b });
+    markerRef.current.style.transform = `rotate(${hue}deg)`;
+  }, [theme, hue]);
+
+  useEffect(() => {
     if (dragging.wheel) {
       const rect = wheelRef.current.getBoundingClientRect();
       const mouseVec = [mousePos.x, mousePos.y]; //current mouse position.
@@ -85,14 +127,16 @@ const Picker = () => {
       const angleVec = [mousePos.x - middleVec[0], mousePos.y - middleVec[1]]; //vector subtraction, points from middle of circle to mouse cursor.
       let angle = 90 + (Math.atan2(angleVec[1], angleVec[0]) * 180) / Math.PI;
       angle = angle < 0 ? 360 + angle : angle;
-      markerRef.current.style.transform = `rotate(${angle}deg)`;
       setHue(angle);
       const sqDistance =
         (middleVec[0] - mouseVec[0]) * (middleVec[0] - mouseVec[0]) +
         (middleVec[1] - mouseVec[1]) * (middleVec[1] - mouseVec[1]); //distance from mouse to middle of wheel.
       if (sqDistance >= ((0.87 * rect.width) / 2) * ((0.87 * rect.width) / 2)) {
-        setColor((c) => {
-          return { ...c, h: angle };
+        setTheme((prev) => {
+          return {
+            ...prev,
+            c1: colorSetup(angle, prev.c1.hsb.s, prev.c1.hsb.b),
+          };
         });
       }
     } else if (dragging.sat) {
@@ -111,24 +155,17 @@ const Picker = () => {
         x: (100 * xPos) / rect.width,
         y: (100 * yPos) / rect.height,
       };
-      setColor({
-        h: hue,
-        s: newBullsEye.x,
-        b: 100 - newBullsEye.y,
+      setTheme((prev) => {
+        return {
+          ...prev,
+          c1: colorSetup(prev.c1.hsb.h, newBullsEye.x, 100 - newBullsEye.y),
+        };
       });
       setBullsEyePos(newBullsEye);
     }
-  }, [mousePos, dragging, hue]);
+  }, [mousePos, dragging, setTheme]);
 
-  const hsbToHsl = (col) => {
-    const sNormalized = col.s / 100;
-    const bNormalized = col.b / 100;
-    const l = bNormalized * (1 - sNormalized / 2);
-    let sl = l === 0 || l === 1 ? 0 : (bNormalized - l) / Math.min(l, 1 - l);
-    return `hsl(${col.h}, ${Math.round(sl * 100)}%, ${Math.round(l * 100)}%)`;
-  };
-
-  const handleMouseDown = (e) => {
+  const handleMouseDown = () => {
     const rect = wheelRef.current.getBoundingClientRect();
     const middleVec = [rect.x + rect.width / 2, rect.y + rect.height / 2]; //current wheel position (middle).
     const sqDistance =
@@ -139,23 +176,58 @@ const Picker = () => {
     }
   };
 
+  const generateNewTheme = (c1) => {
+    let h = c1.hsb.h;
+    let newTheme = new Array(Object.keys(theme).length - 1);
+    for (let i = 0; i < newTheme.length; i++) {
+      let h1 =
+        h + (Math.random() * 6 - 3) > 0
+          ? h + ((Math.random() * 6 - 3) % 360)
+          : 360 + h + (Math.random() * 6 - 3);
+      let s1 = Math.random() * 100;
+      let b1 = Math.random() * 100;
+      newTheme[i] = colorSetup(h1, s1, b1);
+    }
+    newTheme = newTheme.sort((a, b) => a.hsb.b - b.hsb.b);
+    return newTheme;
+  };
+
+  const handleConfirm = () => {
+    setPickerVisible(false);
+    setMainPicked(true);
+    const newTheme = generateNewTheme(theme.c1);
+    setTheme((prev) => {
+      return {
+        ...prev,
+        c2: newTheme[0],
+        c3: newTheme[1],
+        c4: newTheme[2],
+        c5: newTheme[3],
+        c6: newTheme[4],
+      };
+    });
+  };
+
   return (
-    <>
-      <Wheel ref={wheelRef} onMouseDown={handleMouseDown}>
-        <Marker ref={markerRef} />
-        <WheelMask>
-          <SaturationSquare
-            hue={hue}
-            mousePos={mousePos}
-            dragging={dragging}
-            bullsEyePos={bullsEyePos}
-            setDragging={setDragging}
-            squareRef={squareRef}
-          />
-        </WheelMask>
-      </Wheel>
-      <CurrentColor style={{ backgroundColor: hsbToHsl(color) }} />
-    </>
+    <PickContainer style={{ backgroundColor: 'beige' }}>
+      <WheelContainer>
+        <Wheel ref={wheelRef} onMouseDown={handleMouseDown}>
+          <Marker ref={markerRef} />
+          <WheelMask style={{ backgroundColor: 'beige' }}>
+            <SaturationSquare
+              hue={hue}
+              contrast={theme.c1.rgb.contrast}
+              bullsEyePos={bullsEyePos}
+              setDragging={setDragging}
+              squareRef={squareRef}
+            />
+          </WheelMask>
+        </Wheel>
+      </WheelContainer>
+      <Confirm onClick={handleConfirm}>
+        <FaCheck size={50} />
+      </Confirm>
+    </PickContainer>
   );
 };
 

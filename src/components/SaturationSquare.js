@@ -24,11 +24,10 @@ const SatMaskB = styled.div`
 
 const BullsEye = styled.div`
   position: absolute;
-  width: 4px;
-  height: 4px;
+  width: 6px;
+  height: 6px;
   background-color: transparent;
   border-radius: 50%;
-  border: 1px solid black;
   z-index: 10;
 `;
 
@@ -46,8 +45,9 @@ const SaturationSquare = (props) => {
         <BullsEye
           bullsEyePos={props.bullsEyePos}
           style={{
-            top: `calc(${props.bullsEyePos.y}% - 2px)`,
-            left: `calc(${props.bullsEyePos.x}% - 2px)`,
+            top: `calc(${props.bullsEyePos.y}% - 3px)`,
+            left: `calc(${props.bullsEyePos.x}% - 3px)`,
+            border: `1px solid ${props.contrast}`,
           }}
         />
       </SatSquare>
