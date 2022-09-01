@@ -1,4 +1,5 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useContext } from 'react';
+import { eventsContext } from '../App';
 import styled from 'styled-components';
 import SaturationSquare from './SaturationSquare';
 import colorSetup from '../helpers/color';
@@ -88,6 +89,7 @@ const Marker = styled.div`
 `;
 
 const Picker = ({ theme, setTheme, setMainPicked, setPickerVisible }) => {
+  const { mousePos, dragging, setDragging } = useContext(eventsContext);
   const wheelRef = useRef(null);
   const squareRef = useRef(null);
   const markerRef = useRef(null);
@@ -96,22 +98,6 @@ const Picker = ({ theme, setTheme, setMainPicked, setPickerVisible }) => {
     x: 50,
     y: 50,
   });
-  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
-  const [dragging, setDragging] = useState({ wheel: false, sat: false });
-
-  useEffect(() => {
-    const disableDrag = () => setDragging({ wheel: false, sat: false });
-    const updateMouse = (e) => {
-      e.preventDefault();
-      setMousePos({ x: e.clientX, y: e.clientY });
-    };
-    window.addEventListener('mousemove', updateMouse);
-    window.addEventListener('mouseup', disableDrag);
-    return () => {
-      window.removeEventListener('mousemove', updateMouse);
-      window.removeEventListener('mouseup', disableDrag);
-    };
-  }, []);
 
   useEffect(() => {
     setHue(theme.c1.hsb.h);
@@ -172,7 +158,7 @@ const Picker = ({ theme, setTheme, setMainPicked, setPickerVisible }) => {
       (middleVec[0] - mousePos.x) * (middleVec[0] - mousePos.x) +
       (middleVec[1] - mousePos.y) * (middleVec[1] - mousePos.y); //distance from mouse to middle of wheel.
     if (sqDistance >= ((0.87 * rect.width) / 2) * ((0.87 * rect.width) / 2)) {
-      setDragging({ wheel: true, sat: false });
+      setDragging({ wheel: true, sat: false, bar: false });
     }
   };
 

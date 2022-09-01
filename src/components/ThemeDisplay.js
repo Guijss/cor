@@ -52,11 +52,7 @@ const ThemeDisplay = ({ theme, availableSchemes }) => {
       {availableSchemes.map((e, i) => (
         <NameWheel key={i}>
           <span>{e.name}</span>
-          <e.component
-            col={theme.c1}
-            displaySize={displaySize}
-            maskCol="beige"
-          />
+          <e.component col={theme.c1} displaySize={displaySize} />
         </NameWheel>
       ))}
     </DisplayContainer>

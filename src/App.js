@@ -1,10 +1,14 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, createContext } from 'react';
 import styled from 'styled-components';
 import Picker from './components/Picker';
 import colorSetup from './helpers/color';
 import ColorBar from './components/ColorBar';
 import ThemeDisplay from './components/ThemeDisplay';
 import schemes from './helpers/schemes';
+import HexText from './components/HexText';
+import Lock from './components/Lock';
+
+export const eventsContext = createContext();
 
 const PageContainer = styled.div`
   position: relative;
@@ -81,6 +85,12 @@ function App() {
     new Array(6).fill(0).map((e, i) => (i === 0 ? 1 : 0))
   );
 
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  const [dragging, setDragging] = useState({
+    wheel: false,
+    sat: false,
+    bar: false,
+  });
   const [barWidth, setBarWidth] = useState(1);
   const [mainPicked, setMainPicked] = useState(false);
   const [availableSchemes, setAvailableSchemes] = useState(schemes);
@@ -93,26 +103,30 @@ function App() {
     false,
     false,
   ]);
-  const firstUpdate = useRef(true);
+  const [hoveringBar, setHoveringBar] = useState([
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+  ]);
 
   useEffect(() => {
-    if (firstUpdate.current) {
-      firstUpdate.current = false;
-    } else {
-      setAvailableSchemes((prev) =>
-        prev.filter((e) => {
-          let found = true;
-          for (let i = 0; i < pickedRanges.length; i++) {
-            if (!e.ranges.includes(pickedRanges[i])) {
-              found = false;
-              break;
-            }
+    //trim out impossible schemes after color pick.
+    setAvailableSchemes(
+      schemes.filter((e) => {
+        let found = true;
+        for (let i = 0; i < pickedRanges.length; i++) {
+          if (!e.ranges.includes(pickedRanges[i])) {
+            found = false;
+            break;
           }
-          return found;
-        })
-      );
-    }
-  }, [pickedRanges, theme.c1.range]);
+        }
+        return found;
+      })
+    );
+  }, [pickedRanges]);
 
   useEffect(() => {
     const pickNewCol = () => {
@@ -124,7 +138,12 @@ function App() {
       const minVal = chosenRange * 30 - 15;
       let chosenHue = Math.random() * 30 + minVal; //30 deg for each color range.
       chosenHue = chosenHue < 0 ? 360 + chosenHue : chosenHue % 360;
-      return colorSetup(chosenHue, Math.random() * 100, Math.random() * 100);
+      const col = colorSetup(
+        chosenHue,
+        Math.random() * 100,
+        Math.random() * 100
+      );
+      return col.rgb.hex !== theme.c1.rgb.hex ? col : pickNewCol();
     };
     const keyUpHandler = (e) => {
       if (!mainPicked) {
@@ -140,11 +159,21 @@ function App() {
         });
       }
     };
+    const disableDrag = () =>
+      setDragging({ wheel: false, sat: false, bar: false });
+    const updateMouse = (e) => {
+      e.preventDefault();
+      setMousePos({ x: e.clientX, y: e.clientY });
+    };
+    window.addEventListener('mousemove', updateMouse);
+    window.addEventListener('mouseup', disableDrag);
     window.addEventListener('keyup', keyUpHandler);
     return () => {
+      window.removeEventListener('mousemove', updateMouse);
+      window.removeEventListener('mouseup', disableDrag);
       window.removeEventListener('keyup', keyUpHandler);
     };
-  }, [isBarLocked, availableSchemes, mainPicked, theme.c1.range]);
+  }, [isBarLocked, availableSchemes, mainPicked, theme.c1]);
 
   useEffect(() => {
     const reducedArr = isBarVisible.reduce((a, b) => a + b);
@@ -182,32 +211,41 @@ function App() {
         }}
       >
         <ThemeDisplay theme={theme} availableSchemes={availableSchemes} />
-        <ColorBarContainer ref={barsRef}>
-          {Object.entries(theme).map((e, i, a) => (
-            <ColorBar
-              key={i}
-              idx={i}
-              color={e[1]}
-              len={a.length}
-              visible={isBarVisible[i]}
-              width={barWidth}
-              mainPicked={mainPicked}
-              isBarLocked={isBarLocked}
-              mainColorRange={theme.c1.range}
-              setIsBarLocked={setIsBarLocked}
+        <eventsContext.Provider value={{ mousePos, dragging, setDragging }}>
+          <ColorBarContainer ref={barsRef}>
+            {Object.entries(theme).map((e, i) => (
+              <ColorBar
+                key={i}
+                index={i}
+                color={e[1]}
+                visible={isBarVisible[i]}
+                width={barWidth}
+                mainPicked={mainPicked}
+                setPickerVisible={setPickerVisible}
+                setHoveringBar={setHoveringBar}
+              >
+                <HexText color={e[1]} visible={isBarVisible[i]} />
+                <Lock
+                  index={i}
+                  isLocked={isBarLocked[i]}
+                  pickedRanges={pickedRanges}
+                  theme={theme}
+                  hoveringBar={hoveringBar[i]}
+                  setPickedRanges={setPickedRanges}
+                  setIsBarLocked={setIsBarLocked}
+                />
+              </ColorBar>
+            ))}
+          </ColorBarContainer>
+          {pickerVisible && (
+            <Picker
+              theme={theme}
+              setTheme={setTheme}
+              setMainPicked={setMainPicked}
               setPickerVisible={setPickerVisible}
-              setPickedRanges={setPickedRanges}
             />
-          ))}
-        </ColorBarContainer>
-        {pickerVisible && (
-          <Picker
-            theme={theme}
-            setTheme={setTheme}
-            setMainPicked={setMainPicked}
-            setPickerVisible={setPickerVisible}
-          />
-        )}
+          )}
+        </eventsContext.Provider>
       </Page>
     </PageContainer>
   );
