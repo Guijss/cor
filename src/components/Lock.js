@@ -1,5 +1,7 @@
+import { useContext } from 'react';
 import styled from 'styled-components';
 import { FaLock, FaLockOpen } from 'react-icons/fa';
+import { eventsContext } from '../App';
 
 const LockIcon = styled.span`
   position: relative;
@@ -13,25 +15,18 @@ const LockIcon = styled.span`
   }
 `;
 
-const Lock = ({
-  index,
-  isLocked,
-  theme,
-  hoveringBar,
-  setPickedRanges,
-  setIsBarLocked,
-}) => {
+const Lock = ({ index, setPickedRanges }) => {
+  const { theme, setTheme } = useContext(eventsContext);
+
   const handleClick = () => {
-    if (isLocked) {
+    if (theme[index].isBarLocked) {
       setPickedRanges((prev) => {
         let newPickedRanges = [];
         let removedFirst = false;
         for (let i = 0; i < prev.length; i++) {
-          if (
-            prev[i] ===
-              (12 - theme.c1.range + theme[`c${index + 1}`].range) % 12 &&
-            !removedFirst
-          ) {
+          let newEl = theme[index].color.range - theme[0].color.range;
+          newEl = newEl >= 0 ? newEl : 12 + newEl;
+          if (prev[i] === newEl && !removedFirst) {
             removedFirst = true;
             continue;
           }
@@ -40,30 +35,37 @@ const Lock = ({
         return newPickedRanges;
       });
     } else {
-      setPickedRanges((prev) => [
-        ...prev,
-        (12 - theme.c1.range + theme[`c${index + 1}`].range) % 12,
-      ]);
+      setPickedRanges((prev) => {
+        let newEl = theme[index].color.range - theme[0].color.range;
+        newEl = newEl >= 0 ? newEl : 12 + newEl;
+        return [...prev, newEl];
+      });
     }
-
-    setIsBarLocked((prev) => prev.map((e, i) => (i !== index ? e : !e)));
+    setTheme((prev) => {
+      let newTheme = [...prev];
+      newTheme[index] = {
+        ...newTheme[index],
+        isBarLocked: !newTheme[index].isBarLocked,
+      };
+      return newTheme;
+    });
   };
 
   return (
     <LockIcon
       onClick={handleClick}
       style={{
-        opacity: hoveringBar ? 1 : 0.2,
+        opacity: theme[index].hoveringBar ? 1 : 0.2,
         visibility:
-          theme[`c${index + 1}`].rgb.hex !== theme.c1.rgb.hex
+          theme[index].color.rgb.hex !== theme[0].color.rgb.hex
             ? 'visible'
             : 'hidden',
       }}
     >
-      {isLocked ? (
-        <FaLock size={30} color={theme[`c${index + 1}`].rgb.contrast} />
+      {theme[index].isBarLocked ? (
+        <FaLock size={30} color={theme[index].color.rgb.contrast} />
       ) : (
-        <FaLockOpen size={30} color={theme[`c${index + 1}`].rgb.contrast} />
+        <FaLockOpen size={30} color={theme[index].color.rgb.contrast} />
       )}
     </LockIcon>
   );

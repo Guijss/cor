@@ -88,8 +88,9 @@ const Marker = styled.div`
   transform-origin: bottom center;
 `;
 
-const Picker = ({ theme, setTheme, setMainPicked, setPickerVisible }) => {
-  const { mousePos, dragging, setDragging } = useContext(eventsContext);
+const Picker = ({ setMainPicked }) => {
+  const { mousePos, dragging, theme, setTheme, setDragging, setPickerVisible } =
+    useContext(eventsContext);
   const wheelRef = useRef(null);
   const squareRef = useRef(null);
   const markerRef = useRef(null);
@@ -98,12 +99,6 @@ const Picker = ({ theme, setTheme, setMainPicked, setPickerVisible }) => {
     x: 50,
     y: 50,
   });
-
-  useEffect(() => {
-    setHue(theme.c1.hsb.h);
-    setBullsEyePos({ x: theme.c1.hsb.s, y: 100 - theme.c1.hsb.b });
-    markerRef.current.style.transform = `rotate(${hue}deg)`;
-  }, [theme, hue]);
 
   useEffect(() => {
     if (dragging.wheel) {
@@ -119,10 +114,12 @@ const Picker = ({ theme, setTheme, setMainPicked, setPickerVisible }) => {
         (middleVec[1] - mouseVec[1]) * (middleVec[1] - mouseVec[1]); //distance from mouse to middle of wheel.
       if (sqDistance >= ((0.87 * rect.width) / 2) * ((0.87 * rect.width) / 2)) {
         setTheme((prev) => {
-          return {
-            ...prev,
-            c1: colorSetup(angle, prev.c1.hsb.s, prev.c1.hsb.b),
+          let newTheme = [...prev];
+          newTheme[0] = {
+            ...newTheme[0],
+            color: colorSetup(angle, prev[0].color.hsb.s, prev[0].color.hsb.b),
           };
+          return newTheme;
         });
       }
     } else if (dragging.sat) {
@@ -142,14 +139,36 @@ const Picker = ({ theme, setTheme, setMainPicked, setPickerVisible }) => {
         y: (100 * yPos) / rect.height,
       };
       setTheme((prev) => {
-        return {
-          ...prev,
-          c1: colorSetup(prev.c1.hsb.h, newBullsEye.x, 100 - newBullsEye.y),
+        let newTheme = [...prev];
+        newTheme[0] = {
+          ...newTheme[0],
+          color: colorSetup(
+            prev[0].color.hsb.h,
+            newBullsEye.x,
+            100 - newBullsEye.y
+          ),
         };
+        return newTheme;
       });
       setBullsEyePos(newBullsEye);
+    } else {
     }
   }, [mousePos, dragging, setTheme]);
+
+  useEffect(() => {
+    if (dragging.sat || dragging.wheel) {
+      return;
+    }
+    setHue(theme[0].color.hsb.h);
+    setBullsEyePos({
+      x: theme[0].color.hsb.s,
+      y: 100 - theme[0].color.hsb.b,
+    });
+  }, [theme, dragging]);
+
+  useEffect(() => {
+    markerRef.current.style.transform = `rotate(${hue}deg)`;
+  }, [hue]);
 
   const handleMouseDown = () => {
     const rect = wheelRef.current.getBoundingClientRect();
@@ -158,13 +177,13 @@ const Picker = ({ theme, setTheme, setMainPicked, setPickerVisible }) => {
       (middleVec[0] - mousePos.x) * (middleVec[0] - mousePos.x) +
       (middleVec[1] - mousePos.y) * (middleVec[1] - mousePos.y); //distance from mouse to middle of wheel.
     if (sqDistance >= ((0.87 * rect.width) / 2) * ((0.87 * rect.width) / 2)) {
-      setDragging({ wheel: true, sat: false, bar: false });
+      setDragging({ wheel: true, sat: false });
     }
   };
 
   const generateNewTheme = (c1) => {
     let h = c1.hsb.h;
-    let newTheme = new Array(Object.keys(theme).length - 1);
+    let newTheme = new Array(theme.length - 1);
     for (let i = 0; i < newTheme.length; i++) {
       let h1 =
         h + (Math.random() * 6 - 3) > 0
@@ -181,17 +200,10 @@ const Picker = ({ theme, setTheme, setMainPicked, setPickerVisible }) => {
   const handleConfirm = () => {
     setPickerVisible(false);
     setMainPicked(true);
-    const newTheme = generateNewTheme(theme.c1);
-    setTheme((prev) => {
-      return {
-        ...prev,
-        c2: newTheme[0],
-        c3: newTheme[1],
-        c4: newTheme[2],
-        c5: newTheme[3],
-        c6: newTheme[4],
-      };
-    });
+    const newTheme = generateNewTheme(theme[0].color);
+    setTheme((prev) =>
+      prev.map((e, i) => (i === 0 ? e : { ...e, color: newTheme[i - 1] }))
+    );
   };
 
   return (
@@ -202,7 +214,7 @@ const Picker = ({ theme, setTheme, setMainPicked, setPickerVisible }) => {
           <WheelMask style={{ backgroundColor: 'beige' }}>
             <SaturationSquare
               hue={hue}
-              contrast={theme.c1.rgb.contrast}
+              contrast={theme[0].color.rgb.contrast}
               bullsEyePos={bullsEyePos}
               setDragging={setDragging}
               squareRef={squareRef}

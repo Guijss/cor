@@ -33,7 +33,7 @@ const BullsEye = styled.div`
 
 const SaturationSquare = (props) => {
   const handleMouseDown = () => {
-    props.setDragging({ wheel: false, sat: true, bar: false });
+    props.setDragging({ wheel: false, sat: true });
   };
 
   return (
