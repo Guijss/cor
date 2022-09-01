@@ -1,4 +1,6 @@
+import { useContext } from 'react';
 import styled from 'styled-components';
+import { eventsContext } from '../App';
 
 const Bar = styled.div`
   position: relative;
@@ -13,7 +15,7 @@ const Bar = styled.div`
   font-weight: bold;
   letter-spacing: 0.1rem;
   &:hover {
-    cursor: ${(props) => (props.mainPicked ? 'grab' : 'pointer')};
+    cursor: ${(props) => (!props.mainPicked ? 'pointer' : 'grab')};
   }
 `;
 
@@ -23,20 +25,20 @@ const PickMain = styled.span`
   opacity: ${(props) => props.opacity};
 `;
 
-const ColorBar = ({
-  index,
-  color,
-  visible,
-  width,
-  mainPicked,
-  setPickerVisible,
-  setHoveringBar,
-  children,
-}) => {
+const ColorBar = ({ index, color, visible, width, mainPicked, children }) => {
+  const { setPickerVisible, setTheme } = useContext(eventsContext);
   const handlePick = () => {
     if (!mainPicked) {
       setPickerVisible(true);
     }
+  };
+
+  const handleMouseEvent = (key, state) => {
+    setTheme((prev) => {
+      let newTheme = [...prev];
+      newTheme[index] = { ...newTheme[index], [key]: state };
+      return newTheme;
+    });
   };
 
   return (
@@ -46,20 +48,9 @@ const ColorBar = ({
         backgroundColor: color.rgb.hex,
       }}
       mainPicked={mainPicked}
-      onMouseEnter={() =>
-        setHoveringBar((prev) => {
-          let newArr = [...prev];
-          newArr[index] = true;
-          return newArr;
-        })
-      }
-      onMouseLeave={() => {
-        setHoveringBar((prev) => {
-          let newArr = [...prev];
-          newArr[index] = false;
-          return newArr;
-        });
-      }}
+      onMouseEnter={() => handleMouseEvent('hoveringBar', true)}
+      onMouseLeave={() => handleMouseEvent('hoveringBar', false)}
+      onMouseDown={() => handleMouseEvent('draggingBar', true)}
       onClick={handlePick}
     >
       {mainPicked ? (

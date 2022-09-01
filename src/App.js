@@ -7,6 +7,7 @@ import ThemeDisplay from './components/ThemeDisplay';
 import schemes from './helpers/schemes';
 import HexText from './components/HexText';
 import Lock from './components/Lock';
+import initialTheme from './helpers/initialTheme';
 
 export const eventsContext = createContext();
 
@@ -72,15 +73,9 @@ const ColorBarContainer = styled.div`
 
 function App() {
   const barsRef = useRef(null);
+  const pageRef = useRef(null);
   const [pickerVisible, setPickerVisible] = useState(false);
-  const [theme, setTheme] = useState({
-    c1: colorSetup(213, 84, 20),
-    c2: colorSetup(217, 68, 26),
-    c3: colorSetup(214, 52, 38),
-    c4: colorSetup(213, 38, 50),
-    c5: colorSetup(225, 19, 57),
-    c6: colorSetup(225, 35, 32),
-  });
+  const [theme, setTheme] = useState(initialTheme);
   const [isBarVisible, setIsBarVisible] = useState(
     new Array(6).fill(0).map((e, i) => (i === 0 ? 1 : 0))
   );
@@ -89,28 +84,11 @@ function App() {
   const [dragging, setDragging] = useState({
     wheel: false,
     sat: false,
-    bar: false,
   });
   const [barWidth, setBarWidth] = useState(1);
   const [mainPicked, setMainPicked] = useState(false);
   const [availableSchemes, setAvailableSchemes] = useState(schemes);
   const [pickedRanges, setPickedRanges] = useState([]);
-  const [isBarLocked, setIsBarLocked] = useState([
-    true,
-    false,
-    false,
-    false,
-    false,
-    false,
-  ]);
-  const [hoveringBar, setHoveringBar] = useState([
-    false,
-    false,
-    false,
-    false,
-    false,
-    false,
-  ]);
 
   useEffect(() => {
     //trim out impossible schemes after color pick.
@@ -134,7 +112,7 @@ function App() {
         availableSchemes[Math.floor(Math.random() * availableSchemes.length)];
       const index = Math.floor(Math.random() * chosenScheme.ranges.length);
       let chosenRange = chosenScheme.ranges[index];
-      chosenRange = (12 - theme.c1.range + chosenRange) % 12;
+      chosenRange = (theme[0].color.range + chosenRange) % 12;
       const minVal = chosenRange * 30 - 15;
       let chosenHue = Math.random() * 30 + minVal; //30 deg for each color range.
       chosenHue = chosenHue < 0 ? 360 + chosenHue : chosenHue % 360;
@@ -143,24 +121,26 @@ function App() {
         Math.random() * 100,
         Math.random() * 100
       );
-      return col.rgb.hex !== theme.c1.rgb.hex ? col : pickNewCol();
+      return col.rgb.hex !== theme[0].color.rgb.hex ? col : pickNewCol();
     };
     const keyUpHandler = (e) => {
       if (!mainPicked) {
         return;
       }
       if (e.code === 'Space') {
-        isBarLocked.forEach((e, i) => {
-          if (!e) {
-            setTheme((prev) => {
-              return { ...prev, [`c${i + 1}`]: pickNewCol() };
-            });
-          }
-        });
+        setTheme((prev) =>
+          prev.map((e) => (e.isBarLocked ? e : { ...e, color: pickNewCol() }))
+        );
       }
     };
-    const disableDrag = () =>
-      setDragging({ wheel: false, sat: false, bar: false });
+    const disableDrag = () => {
+      setDragging({ wheel: false, sat: false });
+      setTheme((prev) =>
+        prev.map((e) => {
+          return { ...e, draggingBar: false };
+        })
+      );
+    };
     const updateMouse = (e) => {
       e.preventDefault();
       setMousePos({ x: e.clientX, y: e.clientY });
@@ -173,7 +153,7 @@ function App() {
       window.removeEventListener('mouseup', disableDrag);
       window.removeEventListener('keyup', keyUpHandler);
     };
-  }, [isBarLocked, availableSchemes, mainPicked, theme.c1]);
+  }, [availableSchemes, mainPicked, theme]);
 
   useEffect(() => {
     const reducedArr = isBarVisible.reduce((a, b) => a + b);
@@ -188,12 +168,62 @@ function App() {
     }
   }, [mainPicked]);
 
+  useEffect(() => {
+    // let index = 0;
+    // let isDragging = false;
+    // theme.forEach((e, i) => {
+    //   if (e.draggingBar) {
+    //     index = i;
+    //     isDragging = true;
+    //   }
+    // });
+    // if (index === 0) {
+    //   return;
+    // }
+    //if (isDragging) {
+
+    setTheme((prev) => {
+      let index = 0;
+      let isDragging = false;
+      prev.forEach((e, i) => {
+        if (e.draggingBar) {
+          index = i;
+          isDragging = true;
+        }
+      });
+      if (index === 0 || isDragging === false) {
+        return prev;
+      }
+      const rect = barsRef.current.getBoundingClientRect();
+      const barMin = rect.x + index * (rect.width / 6);
+      const barMax = barMin + rect.width / 6;
+      if (mousePos.x < barMin && index > 1) {
+        let newTheme = [...prev];
+        let tempEl = newTheme[index - 1];
+        newTheme[index - 1] = newTheme[index];
+        newTheme[index] = tempEl;
+        newTheme[index - 1].hoveringBar = true;
+        newTheme[index].hoveringBar = false;
+        return newTheme;
+      } else if (mousePos.x > barMax && index < 5) {
+        let newTheme = [...prev];
+        let tempEl = newTheme[index + 1];
+        newTheme[index + 1] = newTheme[index];
+        newTheme[index] = tempEl;
+        newTheme[index + 1].hoveringBar = true;
+        newTheme[index].hoveringBar = false;
+        return newTheme;
+      }
+      return prev;
+    });
+  }, [mousePos]);
+
   return (
-    <PageContainer>
+    <PageContainer ref={pageRef}>
       <Banner
         style={{
-          color: theme.c2.rgb.contrast,
-          backgroundColor: theme.c2.rgb.hex,
+          color: theme[1].color.rgb.contrast,
+          backgroundColor: theme[1].color.rgb.hex,
         }}
       >
         <Logo>Cor</Logo>
@@ -201,50 +231,46 @@ function App() {
       </Banner>
       <Page
         style={{
-          backgroundColor: theme.c1.rgb.hex,
+          backgroundColor: theme[0].color.rgb.hex,
           backgroundImage: `linear-gradient(to left, ${
-            theme.c1.rgb.hex
-          }, rgb(${Math.min(theme.c1.rgb.r * 1.7, 255)}, ${Math.min(
-            theme.c1.rgb.g * 1.7,
+            theme[0].color.rgb.hex
+          }, rgb(${Math.min(theme[0].color.rgb.r * 1.7, 255)}, ${Math.min(
+            theme[0].color.rgb.g * 1.7,
             255
-          )}, ${Math.min(theme.c1.rgb.b * 1.7, 255)})`,
+          )}, ${Math.min(theme[0].color.rgb.b * 1.7, 255)})`,
         }}
       >
         <ThemeDisplay theme={theme} availableSchemes={availableSchemes} />
-        <eventsContext.Provider value={{ mousePos, dragging, setDragging }}>
+        <eventsContext.Provider
+          value={{
+            mousePos,
+            dragging,
+            theme,
+            setTheme,
+            setDragging,
+            setPickerVisible,
+          }}
+        >
           <ColorBarContainer ref={barsRef}>
-            {Object.entries(theme).map((e, i) => (
+            {theme.map((e, i) => (
               <ColorBar
                 key={i}
                 index={i}
-                color={e[1]}
+                color={e.color}
                 visible={isBarVisible[i]}
                 width={barWidth}
                 mainPicked={mainPicked}
-                setPickerVisible={setPickerVisible}
-                setHoveringBar={setHoveringBar}
               >
-                <HexText color={e[1]} visible={isBarVisible[i]} />
+                <HexText color={e.color} visible={isBarVisible[i]} />
                 <Lock
                   index={i}
-                  isLocked={isBarLocked[i]}
                   pickedRanges={pickedRanges}
-                  theme={theme}
-                  hoveringBar={hoveringBar[i]}
                   setPickedRanges={setPickedRanges}
-                  setIsBarLocked={setIsBarLocked}
                 />
               </ColorBar>
             ))}
           </ColorBarContainer>
-          {pickerVisible && (
-            <Picker
-              theme={theme}
-              setTheme={setTheme}
-              setMainPicked={setMainPicked}
-              setPickerVisible={setPickerVisible}
-            />
-          )}
+          {pickerVisible && <Picker setMainPicked={setMainPicked} />}
         </eventsContext.Provider>
       </Page>
     </PageContainer>
