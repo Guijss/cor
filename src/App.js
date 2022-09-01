@@ -69,6 +69,10 @@ const ColorBarContainer = styled.div`
   border-radius: 1rem;
   overflow: hidden;
   border: 2px solid black;
+  &:hover {
+    cursor: ${(props) =>
+      !props.mainPicked ? 'pointer' : props.isDragging ? 'unset' : 'grab'};
+  }
 `;
 
 function App() {
@@ -169,19 +173,6 @@ function App() {
   }, [mainPicked]);
 
   useEffect(() => {
-    // let index = 0;
-    // let isDragging = false;
-    // theme.forEach((e, i) => {
-    //   if (e.draggingBar) {
-    //     index = i;
-    //     isDragging = true;
-    //   }
-    // });
-    // if (index === 0) {
-    //   return;
-    // }
-    //if (isDragging) {
-
     setTheme((prev) => {
       let index = 0;
       let isDragging = false;
@@ -218,6 +209,21 @@ function App() {
     });
   }, [mousePos]);
 
+  useEffect(() => {
+    if (
+      theme[0].draggingBar ||
+      theme[1].draggingBar ||
+      theme[2].draggingBar ||
+      theme[3].draggingBar ||
+      theme[4].draggingBar ||
+      theme[5].draggingBar
+    ) {
+      pageRef.current.style.cursor = 'grabbing';
+    } else {
+      pageRef.current.style.cursor = 'default';
+    }
+  }, [theme]);
+
   return (
     <PageContainer ref={pageRef}>
       <Banner
@@ -251,7 +257,18 @@ function App() {
             setPickerVisible,
           }}
         >
-          <ColorBarContainer ref={barsRef}>
+          <ColorBarContainer
+            ref={barsRef}
+            mainPicked={mainPicked}
+            isDragging={
+              theme[0].draggingBar ||
+              theme[1].draggingBar ||
+              theme[2].draggingBar ||
+              theme[3].draggingBar ||
+              theme[4].draggingBar ||
+              theme[5].draggingBar
+            }
+          >
             {theme.map((e, i) => (
               <ColorBar
                 key={i}

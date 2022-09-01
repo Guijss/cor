@@ -14,9 +14,6 @@ const Bar = styled.div`
   font-family: 'Fredoka', sans-serif;
   font-weight: bold;
   letter-spacing: 0.1rem;
-  &:hover {
-    cursor: ${(props) => (!props.mainPicked ? 'pointer' : 'grab')};
-  }
 `;
 
 const PickMain = styled.span`
