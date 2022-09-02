@@ -16,6 +16,9 @@ const HexTextContainer = styled.span`
   &:hover {
     cursor: pointer;
   }
+  @media only screen and (max-width: 768px) {
+    font-size: 0.7rem;
+  }
 `;
 
 const HexText = ({ color, visible }) => {
@@ -46,7 +49,7 @@ const HexText = ({ color, visible }) => {
             alignItems: 'center',
           }}
         >
-          <span style={{ margin: '5px 5px 0 0' }}>
+          <span style={{ margin: '2px 5px 0 0' }}>
             {copied ? (
               <FaCheck size={12} color={color.rgb.contrast} />
             ) : (

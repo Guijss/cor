@@ -17,12 +17,12 @@ const ColorDots = styled.div`
   transform: rotate(${(props) => props.rot}deg) translateY(-250%);
 `;
 
-const WheelMono = ({ col, displaySize }) => {
+const WheelMono = ({ col, diameter }) => {
   return (
     <Wheel
       style={{
-        width: displaySize.h * 0.7,
-        height: displaySize.h * 0.7,
+        width: diameter,
+        height: diameter,
       }}
     >
       <ColorDots

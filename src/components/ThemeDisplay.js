@@ -5,12 +5,16 @@ const DisplayContainer = styled.div`
   position: relative;
   width: 50%;
   height: 20%;
-  background-color: beige; //${(props) => props.bgCol};
+  background-color: beige;
   border-radius: 1rem;
   display: flex;
   justify-content: space-evenly;
   align-items: center;
   border: 2px solid black;
+  font-size: 1.3rem;
+  @media only screen and (max-width: 768px) {
+    width: 95%;
+  }
 `;
 
 const NameWheel = styled.div`
@@ -21,11 +25,19 @@ const NameWheel = styled.div`
   justify-content: space-evenly;
   align-items: center;
   flex-direction: column;
-  font-family: 'Fredoka One', cursive;
   color: black;
   font-size: 0.8rem;
-  white-space: nowrap;
-  overflow: hidden;
+  @media only screen and (max-width: 768px) {
+    font-size: 0.6rem;
+  }
+`;
+
+const Name = styled.span`
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
 `;
 
 const ThemeDisplay = ({ theme, availableSchemes }) => {
@@ -49,44 +61,31 @@ const ThemeDisplay = ({ theme, availableSchemes }) => {
 
   return (
     <DisplayContainer ref={displayRef}>
-      {availableSchemes.map((e, i) => (
-        <NameWheel key={i}>
-          <span>{e.name}</span>
-          <e.component col={theme[0].color} displaySize={displaySize} />
-        </NameWheel>
-      ))}
+      {availableSchemes.length === 0 ? (
+        <span>No possible color scheme with the current selected colors.</span>
+      ) : (
+        availableSchemes.map((e, i) => (
+          <NameWheel key={i}>
+            <Name
+              style={{
+                width: Math.min(displaySize.w / 6.5, displaySize.h * 0.7),
+                height: `calc(75% - ${Math.min(
+                  displaySize.w / 6.5,
+                  displaySize.h * 0.7
+                )}px)`,
+              }}
+            >
+              {e.name}
+            </Name>
+            <e.component
+              col={theme[0].color}
+              diameter={Math.min(displaySize.w / 6.5, displaySize.h * 0.7)}
+            />
+          </NameWheel>
+        ))
+      )}
     </DisplayContainer>
   );
 };
 
 export default ThemeDisplay;
-
-//Base Wheel:
-// backgroundImage: `conic-gradient(
-//     hsla(${col.hsb.h}, 100%, 50%, 1) 0deg,
-//     hsla(${col.hsb.h}, 100%, 50%, 1) 15deg,
-//     hsla(${(col.hsb.h + 30) % 360}, 100%, 50%, 1) 15deg,
-//     hsla(${(col.hsb.h + 30) % 360}, 100%, 50%, 1) ${15 + 30}deg,
-//     hsla(${(col.hsb.h + 60) % 360}, 100%, 50%, 1) ${15 + 30}deg,
-//     hsla(${(col.hsb.h + 60) % 360}, 100%, 50%, 1) ${15 + 30 * 2}deg,
-//     hsla(${(col.hsb.h + 90) % 360}, 100%, 50%, 1) ${15 + 30 * 2}deg,
-//     hsla(${(col.hsb.h + 90) % 360}, 100%, 50%, 1) ${15 + 30 * 3}deg,
-//     hsla(${(col.hsb.h + 120) % 360}, 100%, 50%, 1) ${15 + 30 * 3}deg,
-//     hsla(${(col.hsb.h + 120) % 360}, 100%, 50%, 1) ${15 + 30 * 4}deg,
-//     hsla(${(col.hsb.h + 150) % 360}, 100%, 50%, 1) ${15 + 30 * 4}deg,
-//     hsla(${(col.hsb.h + 150) % 360}, 100%, 50%, 1) ${15 + 30 * 5}deg,
-//     hsla(${(col.hsb.h + 180) % 360}, 100%, 50%, 1) ${15 + 30 * 5}deg,
-//     hsla(${(col.hsb.h + 180) % 360}, 100%, 50%, 1) ${15 + 30 * 6}deg,
-//     hsla(${(col.hsb.h + 210) % 360}, 100%, 50%, 1) ${15 + 30 * 6}deg,
-//     hsla(${(col.hsb.h + 210) % 360}, 100%, 50%, 1) ${15 + 30 * 7}deg,
-//     hsla(${(col.hsb.h + 240) % 360}, 100%, 50%, 1) ${15 + 30 * 7}deg,
-//     hsla(${(col.hsb.h + 240) % 360}, 100%, 50%, 1) ${15 + 30 * 8}deg,
-//     hsla(${(col.hsb.h + 270) % 360}, 100%, 50%, 1) ${15 + 30 * 8}deg,
-//     hsla(${(col.hsb.h + 270) % 360}, 100%, 50%, 1) ${15 + 30 * 9}deg,
-//     hsla(${(col.hsb.h + 300) % 360}, 100%, 50%, 1) ${15 + 30 * 9}deg,
-//     hsla(${(col.hsb.h + 300) % 360}, 100%, 50%, 1) ${15 + 30 * 10}deg,
-//     hsla(${(col.hsb.h + 330) % 360}, 100%, 50%, 1) ${15 + 30 * 10}deg,
-//     hsla(${(col.hsb.h + 330) % 360}, 100%, 50%, 1) ${15 + 30 * 11}deg,
-//     hsla(${col.hsb.h}, 100%, 50%, 1) ${15 + 30 * 11}deg,
-//     hsla(${col.hsb.h}, 100%, 50%, 1) ${15 + 30 * 12}deg
-//   )`

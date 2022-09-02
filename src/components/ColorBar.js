@@ -11,8 +11,6 @@ const Bar = styled.div`
   align-items: center;
   flex-direction: column;
   transition: width 0.5s ease-in, border-radius 0.5s ease-in;
-  font-family: 'Fredoka', sans-serif;
-  font-weight: bold;
   letter-spacing: 0.1rem;
 `;
 
@@ -23,6 +21,7 @@ const PickMain = styled.span`
 `;
 
 const ColorBar = ({ index, color, visible, width, mainPicked, children }) => {
+  // TODO! add touch events to bars.
   const { setPickerVisible, setTheme } = useContext(eventsContext);
   const handlePick = () => {
     if (!mainPicked) {

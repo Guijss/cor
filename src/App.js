@@ -18,6 +18,7 @@ const PageContainer = styled.div`
   -webkit-user-select: none;
   -ms-user-select: none;
   user-select: none;
+  font-family: 'Fredoka One', cursive;
 `;
 
 const Banner = styled.div`
@@ -28,7 +29,6 @@ const Banner = styled.div`
   -webkit-box-shadow: 0px 1px 1px 0px rgba(0, 0, 0, 0.75);
   -moz-box-shadow: 0px 1px 1px 0px rgba(0, 0, 0, 0.75);
   z-index: 99;
-  font-family: 'Fredoka One', cursive;
   font-size: 2rem;
   display: flex;
   justify-content: center;
@@ -40,6 +40,10 @@ const Logo = styled.div`
   left: 0;
   margin: 5rem;
   font-size: 3rem;
+  @media only screen and (max-width: 768px) {
+    left: auto;
+    margin: 0;
+  }
 `;
 
 const Title = styled.span`
@@ -72,6 +76,9 @@ const ColorBarContainer = styled.div`
   &:hover {
     cursor: ${(props) =>
       !props.mainPicked ? 'pointer' : props.isDragging ? 'unset' : 'grab'};
+  }
+  @media only screen and (max-width: 768px) {
+    width: 95%;
   }
 `;
 
@@ -149,6 +156,9 @@ function App() {
       e.preventDefault();
       setMousePos({ x: e.clientX, y: e.clientY });
     };
+    if (mainPicked) {
+      setIsBarVisible([1, 1, 1, 1, 1, 1]);
+    }
     window.addEventListener('mousemove', updateMouse);
     window.addEventListener('mouseup', disableDrag);
     window.addEventListener('keyup', keyUpHandler);
@@ -165,12 +175,6 @@ function App() {
       setBarWidth(1 / reducedArr);
     }
   }, [isBarVisible]);
-
-  useEffect(() => {
-    if (mainPicked) {
-      setIsBarVisible([1, 1, 1, 1, 1, 1]);
-    }
-  }, [mainPicked]);
 
   useEffect(() => {
     setTheme((prev) => {
