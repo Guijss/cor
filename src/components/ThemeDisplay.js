@@ -12,6 +12,8 @@ const DisplayContainer = styled.div`
   align-items: center;
   border: 2px solid black;
   font-size: 1.3rem;
+  font-family: 'Roboto', sans-serif;
+  font-weight: bold;
   @media only screen and (max-width: 768px) {
     width: 95%;
   }

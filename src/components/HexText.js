@@ -17,7 +17,7 @@ const HexTextContainer = styled.span`
     cursor: pointer;
   }
   @media only screen and (max-width: 768px) {
-    font-size: 0.7rem;
+    font-size: 0.5rem;
   }
 `;
 
