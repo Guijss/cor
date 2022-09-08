@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, createContext } from 'react';
+import { useState, useEffect, useRef, createContext, useCallback } from 'react';
 import styled from 'styled-components';
 import Picker from './components/Picker';
 import colorSetup from './helpers/color';
@@ -8,6 +8,8 @@ import schemes from './helpers/schemes';
 import HexText from './components/HexText';
 import Lock from './components/Lock';
 import initialTheme from './helpers/initialTheme';
+import Refresh from './components/Refresh';
+import { BsFillInfoCircleFill } from 'react-icons/bs';
 
 export const eventsContext = createContext();
 
@@ -70,6 +72,7 @@ const ColorBarContainer = styled.div`
   width: 70%;
   display: flex;
   justify-content: center;
+  align-items: center;
   border-radius: 1rem;
   overflow: hidden;
   border: 2px solid black;
@@ -79,7 +82,27 @@ const ColorBarContainer = styled.div`
   }
   @media only screen and (max-width: 768px) {
     width: 95%;
+    height: 50%;
   }
+`;
+
+const Info = styled.span`
+  position: absolute;
+  top: 7%;
+  left: 2%;
+  z-index: 10;
+`;
+
+const InfoPanel = styled.div`
+  position: relative;
+  background-color: black;
+  border: 1px solid white;
+  color: white;
+  border-radius: 1rem;
+  width: 12rem;
+  padding: 1rem;
+  font-family: 'Roboto', sans-serif;
+  font-size: 1rem;
 `;
 
 function App() {
@@ -100,6 +123,8 @@ function App() {
   const [mainPicked, setMainPicked] = useState(false);
   const [availableSchemes, setAvailableSchemes] = useState(schemes);
   const [pickedRanges, setPickedRanges] = useState([]);
+  const [windowSize, setWindowSize] = useState({ w: 0, h: 0 });
+  const [infoHover, setInfoHover] = useState(false);
 
   useEffect(() => {
     //trim out impossible schemes after color pick.
@@ -117,33 +142,34 @@ function App() {
     );
   }, [pickedRanges]);
 
-  useEffect(() => {
-    const pickNewCol = () => {
-      const chosenScheme =
-        availableSchemes[Math.floor(Math.random() * availableSchemes.length)];
-      const index = Math.floor(Math.random() * chosenScheme.ranges.length);
-      let chosenRange = chosenScheme.ranges[index];
-      chosenRange = (theme[0].color.range + chosenRange) % 12;
-      const minVal = chosenRange * 30 - 15;
-      let chosenHue = Math.random() * 30 + minVal; //30 deg for each color range.
-      chosenHue = chosenHue < 0 ? 360 + chosenHue : chosenHue % 360;
-      const col = colorSetup(
-        chosenHue,
-        Math.random() * 100,
-        Math.random() * 100
-      );
-      return col.rgb.hex !== theme[0].color.rgb.hex ? col : pickNewCol();
-    };
-    const keyUpHandler = (e) => {
+  const pickNewCol = useCallback(() => {
+    const chosenScheme =
+      availableSchemes[Math.floor(Math.random() * availableSchemes.length)];
+    const index = Math.floor(Math.random() * chosenScheme.ranges.length);
+    let chosenRange = chosenScheme.ranges[index];
+    chosenRange = (theme[0].color.range + chosenRange) % 12;
+    const minVal = chosenRange * 30 - 15;
+    let chosenHue = Math.random() * 30 + minVal; //30 deg for each color range.
+    chosenHue = chosenHue < 0 ? 360 + chosenHue : chosenHue % 360;
+    const col = colorSetup(chosenHue, Math.random() * 100, Math.random() * 100);
+    return col.rgb.hex !== theme[0].color.rgb.hex ? col : pickNewCol();
+  }, [availableSchemes, theme]);
+
+  const keyUpHandler = useCallback(
+    (e, fromButton = false) => {
       if (!mainPicked) {
         return;
       }
-      if (e.code === 'Space') {
+      if (e.code === 'Space' || fromButton) {
         setTheme((prev) =>
           prev.map((e) => (e.isBarLocked ? e : { ...e, color: pickNewCol() }))
         );
       }
-    };
+    },
+    [mainPicked, pickNewCol]
+  );
+
+  useEffect(() => {
     const disableDrag = () => {
       setDragging({ wheel: false, sat: false });
       setTheme((prev) =>
@@ -159,15 +185,21 @@ function App() {
     if (mainPicked) {
       setIsBarVisible([1, 1, 1, 1, 1, 1]);
     }
+    const resizeHandler = () => {
+      setWindowSize({ w: window.innerWidth, h: window.innerHeight });
+    };
+    resizeHandler();
+    window.addEventListener('resize', resizeHandler);
     window.addEventListener('mousemove', updateMouse);
     window.addEventListener('mouseup', disableDrag);
     window.addEventListener('keyup', keyUpHandler);
     return () => {
+      window.removeEventListener('resize', resizeHandler);
       window.removeEventListener('mousemove', updateMouse);
       window.removeEventListener('mouseup', disableDrag);
       window.removeEventListener('keyup', keyUpHandler);
     };
-  }, [availableSchemes, mainPicked, theme]);
+  }, [mainPicked, keyUpHandler]);
 
   useEffect(() => {
     const reducedArr = isBarVisible.reduce((a, b) => a + b);
@@ -250,6 +282,28 @@ function App() {
           )}, ${Math.min(theme[0].color.rgb.b * 1.7, 255)})`,
         }}
       >
+        {mainPicked && windowSize.w > 912 && (
+          <Info
+            onMouseEnter={() => setInfoHover(true)}
+            onMouseLeave={() => setInfoHover(false)}
+          >
+            <BsFillInfoCircleFill
+              size={30}
+              color={theme[0].color.rgb.contrast}
+            />
+            {infoHover && (
+              <InfoPanel>
+                The bar on top shows the possible color schemes made with the
+                current colors. <br />
+                <br />
+                Press <span style={{ color: 'gold' }}>&lt;Spacebar&gt;</span> to
+                refresh all unlocked colors. <br /> <br />
+                Click on the <span style={{ color: 'gold' }}>#Colorcode </span>
+                to copy it to the clipboard.
+              </InfoPanel>
+            )}
+          </Info>
+        )}
         <ThemeDisplay theme={theme} availableSchemes={availableSchemes} />
         <eventsContext.Provider
           value={{
@@ -291,6 +345,9 @@ function App() {
               </ColorBar>
             ))}
           </ColorBarContainer>
+          {windowSize.w <= 912 && (
+            <Refresh mainPicked={mainPicked} keyUpHandler={keyUpHandler} />
+          )}
           {pickerVisible && <Picker setMainPicked={setMainPicked} />}
         </eventsContext.Provider>
       </Page>

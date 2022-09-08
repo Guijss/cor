@@ -17,7 +17,13 @@ const Bar = styled.div`
 const PickMain = styled.span`
   position: relative;
   font-size: 2rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
   opacity: ${(props) => props.opacity};
+  @media only screen and (max-width: 400px) {
+    font-size: 1.5rem;
+  }
 `;
 
 const ColorBar = ({ index, color, visible, width, mainPicked, children }) => {
